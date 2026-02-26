@@ -1,89 +1,176 @@
 # @leanvox/mcp-server
 
-MCP (Model Context Protocol) server for the [Leanvox](https://leanvox.com) TTS API. Generate speech, stream audio, and create multi-speaker dialogues from any MCP-compatible AI client.
+> Use Leanvox TTS directly from Claude, ChatGPT, Cursor, and any MCP-compatible AI assistant.
 
-## Quick Start
+**Zero code. One config line. Instant text-to-speech in your AI tools.**
+
+## Quick Setup
+
+### Claude Desktop
+
+Add to `~/.claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "leanvox": {
       "command": "npx",
-      "args": ["@leanvox/mcp-server"],
-      "env": { "LEANVOX_API_KEY": "lv_live_..." }
+      "args": ["-y", "@leanvox/mcp-server"],
+      "env": {
+        "LEANVOX_API_KEY": "lv_live_your_key_here"
+      }
     }
   }
 }
 ```
 
-Add this to your MCP client configuration:
+Restart Claude Desktop. Done. ✨
 
-| Client | Config file |
-|--------|------------|
-| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Claude Code | `.mcp.json` in your project or `~/.claude.json` |
-| Cursor | `.cursor/mcp.json` |
-| VS Code | `.vscode/mcp.json` |
-| Windsurf | `~/.codeium/windsurf/mcp_config.json` |
+### Cursor
 
-## Tools
+Settings → MCP → Add Server:
+
+```json
+{
+  "leanvox": {
+    "command": "npx",
+    "args": ["-y", "@leanvox/mcp-server"],
+    "env": {
+      "LEANVOX_API_KEY": "lv_live_your_key_here"
+    }
+  }
+}
+```
+
+### VS Code (Copilot)
+
+Add to `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "leanvox": {
+      "command": "npx",
+      "args": ["-y", "@leanvox/mcp-server"],
+      "env": {
+        "LEANVOX_API_KEY": "lv_live_your_key_here"
+      }
+    }
+  }
+}
+```
+
+### Claude Code (CLI)
+
+```bash
+claude mcp add leanvox -- npx -y @leanvox/mcp-server
+```
+
+Set your API key:
+
+```bash
+export LEANVOX_API_KEY="lv_live_your_key_here"
+```
+
+---
+
+## What You Can Do
+
+Once connected, just ask your AI assistant in natural language:
+
+> "Read this paragraph aloud using the emma voice"
+
+> "Create a podcast dialogue between two speakers about AI"
+
+> "Clone my voice from this audio file"
+
+> "What voices are available?"
+
+> "Check my Leanvox balance"
+
+The AI assistant handles everything — no code needed.
+
+---
+
+## Available Tools
 
 | Tool | Description |
 |------|-------------|
-| `leanvox_generate` | Generate speech from text. Returns an audio URL. |
-| `leanvox_stream` | Stream audio to a local file. |
-| `leanvox_dialogue` | Multi-speaker dialogue — great for podcasts and conversations. |
-| `leanvox_list_voices` | List available voices, optionally filtered by model. |
-| `leanvox_check_balance` | Check account balance and spending. |
+| `leanvox_generate` | Generate speech from text |
+| `leanvox_stream` | Stream audio to a file |
+| `leanvox_dialogue` | Create multi-speaker dialogue |
+| `leanvox_list_voices` | Browse available voices |
+| `leanvox_clone_voice` | Clone a voice from audio |
+| `leanvox_design_voice` | Design a voice from a description |
+| `leanvox_check_balance` | Check account balance |
 
 ## Resources
 
-| URI | Description |
-|-----|-------------|
-| `leanvox://voices` | All available voices |
-| `leanvox://voices/curated` | 14 curated Pro voices |
-| `leanvox://generations` | Generation history |
-| `leanvox://account` | Balance & usage |
+| Resource | URI | Description |
+|----------|-----|-------------|
+| Voices | `leanvox://voices` | All available voices |
+| Curated | `leanvox://voices/curated` | 14 curated Pro voices |
+| History | `leanvox://generations` | Past generations |
+| Account | `leanvox://account` | Balance & usage |
 
 ## Prompts
 
 | Prompt | Description |
 |--------|-------------|
 | `narrate` | Convert text to natural speech |
-| `podcast` | Create a multi-speaker podcast from content |
-| `voice-clone` | Clone a voice from a reference audio file |
+| `podcast` | Create a multi-speaker podcast |
+| `voice-clone` | Clone a voice from reference audio |
 
-## Tool Definition Files
+---
 
-For custom LLM integrations without MCP, use the tool definition JSON files in the [`tools/`](./tools/) directory:
+## Authentication
 
-- **`tools/openai-tools.json`** — OpenAI function calling format
-- **`tools/anthropic-tools.json`** — Anthropic tool use format
+Get your API key at [leanvox.com/dashboard](https://leanvox.com/dashboard).
 
-See [`tools/README.md`](./tools/README.md) for copy-paste examples.
+Pass it via:
+1. **Environment variable** `LEANVOX_API_KEY` (recommended)
+2. **Config file** `~/.lvox/config.toml`
 
-## Works With
+---
 
-- Claude Desktop
-- Claude Code
-- ChatGPT (via MCP)
-- Cursor
-- VS Code
-- Windsurf
-- Any MCP-compatible client
+## Requirements
 
-## Configuration
+- Node.js 18+
+- Leanvox API key ([get one free](https://leanvox.com))
 
-The server reads `LEANVOX_API_KEY` from the environment. Get your API key at [leanvox.com](https://leanvox.com).
-
-## Development
+## Standalone Usage
 
 ```bash
-npm install
-npm run build
-npm test
+# Run directly
+npx @leanvox/mcp-server
+
+# Or install globally
+npm install -g @leanvox/mcp-server
+leanvox-mcp
 ```
+
+## Troubleshooting
+
+**"Tool not found"** — Restart your AI app after adding the config.
+
+**"Authentication error"** — Check your `LEANVOX_API_KEY` is set correctly.
+
+**"Connection refused"** — Make sure Node.js 18+ is installed: `node --version`
+
+---
+
+## Links
+
+- [Leanvox](https://leanvox.com) — Main site
+- [API Docs](https://leanvox.com/docs) — Full API reference
+- [Python SDK](https://pypi.org/project/leanvox/) — `pip install leanvox`
+- [Node.js SDK](https://www.npmjs.com/package/leanvox) — `npm install leanvox`
+- [GitHub](https://github.com/leanvox/mcp-server) — Source & issues
+
+---
 
 ## License
 
 MIT
+
+*@leanvox/mcp-server — Text-to-speech for the AI era.*
