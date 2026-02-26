@@ -149,13 +149,13 @@ export function registerTools(server: McpServer, client: Leanvox) {
     {
       title: "Generate Dialogue",
       description:
-        "Generate multi-speaker dialogue audio. Each line can use a different voice. Great for podcasts, conversations, and interviews.",
+        "Generate multi-speaker dialogue audio. Each line MUST use a different voice for each speaker. Great for podcasts, conversations, and interviews. IMPORTANT: Always assign distinct voices to different speakers. Call leanvox_list_voices first if you don't know available voices. Common voice pairs: 'af_heart' + 'am_michael' (female/male), 'emma' + 'james' (pro voices).",
       inputSchema: {
         lines: z
           .array(
             z.object({
               text: z.string().describe("Text for this speaker to say"),
-              voice: z.string().describe("Voice ID for this speaker"),
+              voice: z.string().describe("Voice ID for this speaker. Each speaker MUST have a unique voice. Examples: 'af_heart', 'am_michael', 'emma', 'james', 'af_sky'"),
               language: z.string().optional().describe("ISO 639-1 language code"),
               exaggeration: z
                 .number()
