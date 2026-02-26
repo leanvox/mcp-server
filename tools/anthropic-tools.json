@@ -1,0 +1,140 @@
+[
+  {
+    "name": "leanvox_generate",
+    "description": "Generate speech audio from text using Leanvox TTS API. Returns a URL to the generated audio file.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Text to convert to speech (max 10,000 chars)"
+        },
+        "model": {
+          "type": "string",
+          "enum": ["standard", "pro"],
+          "description": "TTS model. 'standard' for fast/cheap, 'pro' for highest quality with emotion control"
+        },
+        "voice": {
+          "type": "string",
+          "description": "Voice ID (e.g. 'af_heart', 'emma', 'james'). Use leanvox_list_voices to see options."
+        },
+        "language": {
+          "type": "string",
+          "description": "ISO 639-1 language code (default: 'en')"
+        },
+        "speed": {
+          "type": "number",
+          "description": "Playback speed 0.5-2.0 (default: 1.0)"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["mp3", "wav"],
+          "description": "Audio format (default: 'mp3')"
+        }
+      },
+      "required": ["text"]
+    }
+  },
+  {
+    "name": "leanvox_stream",
+    "description": "Stream generated speech audio to a local file. Use for longer texts where you want audio saved to disk. Only supports MP3 format.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Text to convert to speech (max 10,000 chars)"
+        },
+        "outputPath": {
+          "type": "string",
+          "description": "Local file path to save the audio (e.g. './output.mp3')"
+        },
+        "model": {
+          "type": "string",
+          "enum": ["standard", "pro"],
+          "description": "TTS model. 'standard' for fast/cheap, 'pro' for highest quality"
+        },
+        "voice": {
+          "type": "string",
+          "description": "Voice ID (e.g. 'af_heart', 'emma', 'james')"
+        },
+        "language": {
+          "type": "string",
+          "description": "ISO 639-1 language code (default: 'en')"
+        },
+        "speed": {
+          "type": "number",
+          "description": "Playback speed 0.5-2.0 (default: 1.0)"
+        }
+      },
+      "required": ["text", "outputPath"]
+    }
+  },
+  {
+    "name": "leanvox_dialogue",
+    "description": "Generate multi-speaker dialogue audio. Each line can use a different voice. Great for podcasts, conversations, and interviews.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "lines": {
+          "type": "array",
+          "description": "Array of dialogue lines (minimum 2)",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "Text for this speaker to say"
+              },
+              "voice": {
+                "type": "string",
+                "description": "Voice ID for this speaker"
+              },
+              "language": {
+                "type": "string",
+                "description": "ISO 639-1 language code"
+              },
+              "exaggeration": {
+                "type": "number",
+                "description": "Emotion intensity 0.0-1.0 (pro model only)"
+              }
+            },
+            "required": ["text", "voice"]
+          }
+        },
+        "model": {
+          "type": "string",
+          "enum": ["standard", "pro"],
+          "description": "TTS model (default: 'pro')"
+        },
+        "gapMs": {
+          "type": "number",
+          "description": "Silence between speakers in milliseconds (default: 500)"
+        }
+      },
+      "required": ["lines"]
+    }
+  },
+  {
+    "name": "leanvox_list_voices",
+    "description": "List available TTS voices. Optionally filter by model ('standard' or 'pro'). Returns voice IDs, names, and preview URLs.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "enum": ["standard", "pro"],
+          "description": "Filter voices by model"
+        }
+      }
+    }
+  },
+  {
+    "name": "leanvox_check_balance",
+    "description": "Check the current Leanvox account balance and total spending. Returns balance in cents and formatted dollar amounts.",
+    "input_schema": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+]

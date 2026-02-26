@@ -1,0 +1,46 @@
+{
+  "name": "@leanvox/mcp-server",
+  "version": "0.1.0",
+  "description": "Model Context Protocol (MCP) server for the Leanvox TTS API",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "leanvox-mcp-server": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "tools"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "leanvox",
+    "tts",
+    "text-to-speech",
+    "ai",
+    "voice"
+  ],
+  "author": "Leanvox",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "leanvox": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}
