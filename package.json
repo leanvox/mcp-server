@@ -42,5 +42,9 @@
     "@types/node": "^22.13.0",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leanvox/mcp-server"
   }
 }
