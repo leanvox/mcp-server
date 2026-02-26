@@ -1,5 +1,5 @@
 {
-  "name": "@leanvox/mcp-server",
+  "name": "leanvox-mcp",
   "version": "0.1.0",
   "description": "Model Context Protocol (MCP) server for the Leanvox TTS API",
   "type": "module",

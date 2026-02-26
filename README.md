@@ -1,4 +1,4 @@
-# @leanvox/mcp-server
+# leanvox-mcp
 
 > Use Leanvox TTS directly from Claude, ChatGPT, Cursor, and any MCP-compatible AI assistant.
 
@@ -15,7 +15,7 @@ Add to `~/.claude/claude_desktop_config.json`:
   "mcpServers": {
     "leanvox": {
       "command": "npx",
-      "args": ["-y", "@leanvox/mcp-server"],
+      "args": ["-y", "leanvox-mcp"],
       "env": {
         "LEANVOX_API_KEY": "lv_live_your_key_here"
       }
@@ -34,7 +34,7 @@ Settings → MCP → Add Server:
 {
   "leanvox": {
     "command": "npx",
-    "args": ["-y", "@leanvox/mcp-server"],
+    "args": ["-y", "leanvox-mcp"],
     "env": {
       "LEANVOX_API_KEY": "lv_live_your_key_here"
     }
@@ -51,7 +51,7 @@ Add to `.vscode/mcp.json`:
   "servers": {
     "leanvox": {
       "command": "npx",
-      "args": ["-y", "@leanvox/mcp-server"],
+      "args": ["-y", "leanvox-mcp"],
       "env": {
         "LEANVOX_API_KEY": "lv_live_your_key_here"
       }
@@ -63,7 +63,7 @@ Add to `.vscode/mcp.json`:
 ### Claude Code (CLI)
 
 ```bash
-claude mcp add leanvox -- npx -y @leanvox/mcp-server
+claude mcp add leanvox -- npx -y leanvox-mcp
 ```
 
 Set your API key:
@@ -142,10 +142,10 @@ Pass it via:
 
 ```bash
 # Run directly
-npx @leanvox/mcp-server
+npx leanvox-mcp
 
 # Or install globally
-npm install -g @leanvox/mcp-server
+npm install -g leanvox-mcp
 leanvox-mcp
 ```
 
@@ -173,4 +173,4 @@ leanvox-mcp
 
 MIT
 
-*@leanvox/mcp-server — Text-to-speech for the AI era.*
+*leanvox-mcp — Text-to-speech for the AI era.*
