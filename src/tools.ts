@@ -20,7 +20,7 @@ export function registerTools(server: McpServer, client: Leanvox) {
         voice: z
           .string()
           .optional()
-          .describe("Voice ID (e.g. 'af_heart', 'emma', 'james'). Use leanvox_list_voices to see options."),
+          .describe("Voice ID. For standard model: 'af_heart', 'am_adam', etc. For pro model: curated IDs like 'narrator_warm_male', 'assistant_pro_female'. Use leanvox_list_voices to see all options."),
         language: z
           .string()
           .optional()
@@ -149,13 +149,13 @@ export function registerTools(server: McpServer, client: Leanvox) {
     {
       title: "Generate Dialogue",
       description:
-        "Generate multi-speaker dialogue audio. Each line MUST use a different voice for each speaker. Great for podcasts, conversations, and interviews. IMPORTANT: Always assign distinct voices to different speakers. Call leanvox_list_voices first if you don't know available voices. Common voice pairs: 'af_heart' + 'am_michael' (female/male), 'emma' + 'james' (pro voices).",
+        "Generate multi-speaker dialogue audio. Each line MUST use a different voice for each speaker. Great for podcasts, conversations, and interviews. IMPORTANT: Always call leanvox_list_voices first to get available voice IDs. For pro model, use curated voice IDs like 'narrator_warm_male', 'assistant_pro_female', 'character_wise_elder'. For standard model, use IDs like 'af_heart', 'am_adam'. Never guess voice IDs — always list voices first.",
       inputSchema: {
         lines: z
           .array(
             z.object({
               text: z.string().describe("Text for this speaker to say"),
-              voice: z.string().describe("Voice ID for this speaker. Each speaker MUST have a unique voice. Examples: 'af_heart', 'am_michael', 'emma', 'james', 'af_sky'"),
+              voice: z.string().describe("Voice ID for this speaker. Each speaker MUST have a unique voice. For pro model use curated IDs (e.g. 'narrator_warm_male', 'podcast_casual_male', 'assistant_pro_female'). For standard model use IDs like 'af_heart', 'am_adam'. Call leanvox_list_voices to see all available voices."),
               language: z.string().optional().describe("ISO 639-1 language code"),
               exaggeration: z
                 .number()

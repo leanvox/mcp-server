@@ -1,6 +1,6 @@
 {
   "name": "leanvox-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Model Context Protocol (MCP) server for the Leanvox TTS API",
   "type": "module",
   "main": "dist/index.js",
