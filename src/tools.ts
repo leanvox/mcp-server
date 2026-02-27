@@ -14,13 +14,17 @@ export function registerTools(server: McpServer, client: Leanvox) {
       inputSchema: {
         text: z.string().describe("Text to convert to speech (max 10,000 chars)"),
         model: z
-          .enum(["standard", "pro"])
+          .enum(["standard", "pro", "max"])
           .optional()
-          .describe("TTS model. 'standard' for fast/cheap, 'pro' for highest quality with emotion control"),
+          .describe("TTS model. 'standard' for fast/cheap, 'pro' for highest quality with emotion control, 'max' for instruction-based voice design"),
         voice: z
           .string()
           .optional()
-          .describe("Voice ID. For standard model: 'af_heart', 'am_adam', etc. For pro model: curated IDs like 'narrator_warm_male', 'assistant_pro_female'. Use leanvox_list_voices to see all options."),
+          .describe("Voice ID (standard/pro only). Use leanvox_list_voices to see all options."),
+        voiceInstructions: z
+          .string()
+          .optional()
+          .describe("Natural language voice description (max model only, max 300 chars). E.g. 'A warm, confident female narrator with a slight British accent'. Mutually exclusive with voice."),
         language: z
           .string()
           .optional()
@@ -49,6 +53,8 @@ export function registerTools(server: McpServer, client: Leanvox) {
                   voice: result.voice,
                   characters: result.characters,
                   costCents: result.costCents,
+                  ...(result.generatedVoiceId ? { generatedVoiceId: result.generatedVoiceId } : {}),
+                  ...(result.suggestion ? { suggestion: result.suggestion } : {}),
                 },
                 null,
                 2,
@@ -76,13 +82,17 @@ export function registerTools(server: McpServer, client: Leanvox) {
         text: z.string().describe("Text to convert to speech (max 10,000 chars)"),
         outputPath: z.string().describe("Local file path to save the audio (e.g. './output.mp3')"),
         model: z
-          .enum(["standard", "pro"])
+          .enum(["standard", "pro", "max"])
           .optional()
-          .describe("TTS model. 'standard' for fast/cheap, 'pro' for highest quality"),
+          .describe("TTS model. 'standard' for fast/cheap, 'pro' for highest quality, 'max' for instruction-based voice design"),
         voice: z
           .string()
           .optional()
-          .describe("Voice ID (e.g. 'af_heart', 'emma', 'james')"),
+          .describe("Voice ID (standard/pro only)"),
+        voiceInstructions: z
+          .string()
+          .optional()
+          .describe("Natural language voice description (max model only, max 300 chars). Mutually exclusive with voice."),
         language: z
           .string()
           .optional()
@@ -149,13 +159,14 @@ export function registerTools(server: McpServer, client: Leanvox) {
     {
       title: "Generate Dialogue",
       description:
-        "Generate multi-speaker dialogue audio. Each line MUST use a different voice for each speaker. Great for podcasts, conversations, and interviews. IMPORTANT: Always call leanvox_list_voices first to get available voice IDs. For pro model, use curated voice IDs like 'narrator_warm_male', 'assistant_pro_female', 'character_wise_elder'. For standard model, use IDs like 'af_heart', 'am_adam'. Never guess voice IDs — always list voices first.",
+        "Generate multi-speaker dialogue audio. Each line MUST use a different voice for each speaker. For standard/pro, use voice IDs (call leanvox_list_voices first). For max model, use voiceInstructions to describe each voice in natural language.",
       inputSchema: {
         lines: z
           .array(
             z.object({
               text: z.string().describe("Text for this speaker to say"),
-              voice: z.string().describe("Voice ID for this speaker. Each speaker MUST have a unique voice. For pro model use curated IDs (e.g. 'narrator_warm_male', 'podcast_casual_male', 'assistant_pro_female'). For standard model use IDs like 'af_heart', 'am_adam'. Call leanvox_list_voices to see all available voices."),
+              voice: z.string().optional().describe("Voice ID (standard/pro). Each speaker MUST have a unique voice."),
+              voiceInstructions: z.string().optional().describe("Natural language voice description (max model only). E.g. 'Warm female podcast host'. Mutually exclusive with voice."),
               language: z.string().optional().describe("ISO 639-1 language code"),
               exaggeration: z
                 .number()
@@ -165,9 +176,9 @@ export function registerTools(server: McpServer, client: Leanvox) {
           )
           .describe("Array of dialogue lines (minimum 2)"),
         model: z
-          .enum(["standard", "pro"])
+          .enum(["standard", "pro", "max"])
           .optional()
-          .describe("TTS model (default: 'pro')"),
+          .describe("TTS model (default: 'pro'). Use 'max' with voiceInstructions per line."),
         gapMs: z
           .number()
           .optional()
@@ -209,12 +220,12 @@ export function registerTools(server: McpServer, client: Leanvox) {
     {
       title: "List Voices",
       description:
-        "List available TTS voices. Optionally filter by model ('standard' or 'pro'). Returns voice IDs, names, and preview URLs.",
+        "List available TTS voices. Optionally filter by model ('standard' or 'pro'). Returns voice IDs, names, and preview URLs. Note: Max model doesn't use voice IDs — use voiceInstructions to describe voices in natural language instead.",
       inputSchema: {
         model: z
           .enum(["standard", "pro"])
           .optional()
-          .describe("Filter voices by model"),
+          .describe("Filter voices by model (max model uses voiceInstructions instead of voice IDs)"),
       },
     },
     async (args) => {
