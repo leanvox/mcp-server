@@ -273,7 +273,7 @@ export function registerTools(server: McpServer, client: Leanvox) {
     },
     async (args) => {
       try {
-        const result = await client.audio.transcribe({
+        const result = await (client as any).audio.transcribe({
           file: args.filePath,
           language: args.language,
           features: args.features,
