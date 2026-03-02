@@ -248,6 +248,66 @@ export function registerTools(server: McpServer, client: Leanvox) {
     },
   );
 
+  // --- leanvox_transcribe ---
+  server.registerTool(
+    "leanvox_transcribe",
+    {
+      title: "Transcribe Audio",
+      description:
+        "Transcribe an audio file with speaker diarization and optional AI summarization. Supports mp3, wav, ogg, flac, m4a, webm. Returns transcript with speaker labels, and optionally a summary with action items and topics.",
+      inputSchema: {
+        filePath: z.string().describe("Path to the audio file to transcribe"),
+        language: z
+          .string()
+          .optional()
+          .describe("ISO 639-1 language code (auto-detect if omitted)"),
+        features: z
+          .array(z.string())
+          .optional()
+          .describe("Features to enable. Default: ['transcript', 'diarization']. Add 'summary' for AI summary with action items."),
+        numSpeakers: z
+          .number()
+          .optional()
+          .describe("Hint for expected number of speakers"),
+      },
+    },
+    async (args) => {
+      try {
+        const result = await client.audio.transcribe({
+          file: args.filePath,
+          language: args.language,
+          features: args.features,
+          numSpeakers: args.numSpeakers,
+        });
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  id: result.id,
+                  durationSeconds: result.duration_seconds,
+                  language: result.language,
+                  formattedTranscript: result.formatted_transcript,
+                  speakers: result.speakers,
+                  ...(result.summary ? { summary: result.summary } : {}),
+                  usage: result.usage,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify(formatError(error), null, 2) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
   // --- leanvox_check_balance ---
   server.registerTool(
     "leanvox_check_balance",
