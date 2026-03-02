@@ -487,8 +487,9 @@ describe("tool listing", () => {
     expect(names).toContain("leanvox_stream");
     expect(names).toContain("leanvox_dialogue");
     expect(names).toContain("leanvox_list_voices");
+    expect(names).toContain("leanvox_transcribe");
     expect(names).toContain("leanvox_check_balance");
-    expect(names).toHaveLength(5);
+    expect(names).toHaveLength(6);
   });
 
   it("each tool has a description and input schema", async () => {
