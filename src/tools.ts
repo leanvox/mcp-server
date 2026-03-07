@@ -324,8 +324,7 @@ export function registerTools(server: McpServer, client: Leanvox) {
       try {
         const { readFileSync } = await import("node:fs");
         const audioBuffer = readFileSync(args.audioPath);
-        const audioBase64 = Buffer.from(audioBuffer).toString("base64");
-        const result = await client.voices.clone({ name: args.name, audioBase64 });
+        const result = await client.voices.clone({ name: args.name, audio: audioBuffer });
         return {
           content: [
             {
@@ -433,7 +432,7 @@ export function registerTools(server: McpServer, client: Leanvox) {
     },
     async (args) => {
       try {
-        const result = await client.voiceover({
+        const result = await (client as any).voiceover({
           file: args.filePath,
           voiceMap: args.voiceMap,
           defaultVoice: args.defaultVoice,
