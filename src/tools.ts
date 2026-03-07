@@ -308,6 +308,176 @@ export function registerTools(server: McpServer, client: Leanvox) {
     },
   );
 
+  // --- leanvox_voice_clone ---
+  server.registerTool(
+    "leanvox_voice_clone",
+    {
+      title: "Clone Voice",
+      description:
+        "Clone a voice from an audio file. Requires 5-30 seconds of clear speech. Cloned voices cost $3.00 to unlock for TTS use. Returns the cloned voice ID.",
+      inputSchema: {
+        name: z.string().describe("Name for the cloned voice (max 100 chars)"),
+        audioPath: z.string().describe("Path to audio file with voice sample (5-30s of clear speech, WAV/MP3, max 10MB)"),
+      },
+    },
+    async (args) => {
+      try {
+        const { readFileSync } = await import("node:fs");
+        const audioBuffer = readFileSync(args.audioPath);
+        const audioBase64 = Buffer.from(audioBuffer).toString("base64");
+        const result = await client.voices.clone({ name: args.name, audioBase64 });
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  ...result,
+                  message: `Voice "${args.name}" cloned successfully. Use the voice ID with leanvox_generate (model: pro). Note: costs $3.00 to unlock.`,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify(formatError(error), null, 2) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // --- leanvox_voice_design ---
+  server.registerTool(
+    "leanvox_voice_design",
+    {
+      title: "Design Voice",
+      description:
+        "Design a custom voice using natural language description. The AI generates a voice matching your description. First design is free, then $1.00 each. Returns the designed voice ID when ready.",
+      inputSchema: {
+        name: z.string().describe("Name for the designed voice (max 100 chars)"),
+        prompt: z.string().describe("Natural language description of the voice (max 500 chars). E.g. 'A warm, elderly male voice with a gentle storytelling tone'"),
+        language: z.string().optional().describe("Voice language (default: 'English')"),
+        description: z.string().optional().describe("Optional notes about intended use"),
+      },
+    },
+    async (args) => {
+      try {
+        const result = await client.voices.design({
+          name: args.name,
+          prompt: args.prompt,
+          language: args.language,
+          description: args.description,
+        });
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  ...result,
+                  message: `Voice design "${args.name}" started. It will be ready in about 1 minute. Use the voice ID with leanvox_generate (model: pro).`,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify(formatError(error), null, 2) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // --- leanvox_voiceover ---
+  server.registerTool(
+    "leanvox_voiceover",
+    {
+      title: "Voice-Over (Re-voice Audio)",
+      description:
+        "Transcribe an audio file and re-voice it with different voices. Chains transcription (with speaker diarization) → multi-speaker dialogue generation. Perfect for dubbing, re-voicing meetings, or creating alternate versions of audio content.",
+      inputSchema: {
+        filePath: z.string().describe("Path to the audio file to transcribe and re-voice"),
+        voiceMap: z
+          .record(z.string(), z.string())
+          .optional()
+          .describe("Map speaker labels to voice IDs. E.g. {'Speaker 1': 'narrator_warm_male', 'Speaker 2': 'af_heart'}. Unmapped speakers use defaultVoice."),
+        defaultVoice: z
+          .string()
+          .optional()
+          .describe("Voice ID for speakers not in voiceMap (default: 'narrator_warm_male')"),
+        model: z
+          .enum(["standard", "pro", "max"])
+          .optional()
+          .describe("TTS model for re-voicing (default: 'pro')"),
+        gapMs: z
+          .number()
+          .optional()
+          .describe("Silence between speakers in ms (default: 500)"),
+        language: z
+          .string()
+          .optional()
+          .describe("Language hint for transcription (auto-detect if omitted)"),
+        numSpeakers: z
+          .number()
+          .optional()
+          .describe("Expected number of speakers"),
+      },
+    },
+    async (args) => {
+      try {
+        const result = await client.voiceover({
+          file: args.filePath,
+          voiceMap: args.voiceMap,
+          defaultVoice: args.defaultVoice,
+          model: args.model,
+          gapMs: args.gapMs,
+          language: args.language,
+          numSpeakers: args.numSpeakers,
+        });
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  transcription: {
+                    id: result.transcription.id,
+                    durationSeconds: result.transcription.duration_seconds,
+                    language: result.transcription.language,
+                    speakers: result.transcription.speakers,
+                    formattedTranscript: result.transcription.formatted_transcript,
+                  },
+                  audio: {
+                    audioUrl: result.audio.audioUrl,
+                    model: result.audio.model,
+                    characters: result.audio.characters,
+                    costCents: result.audio.costCents,
+                  },
+                  voiceMap: result.voiceMap,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify(formatError(error), null, 2) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
   // --- leanvox_check_balance ---
   server.registerTool(
     "leanvox_check_balance",
