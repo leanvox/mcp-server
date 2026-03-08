@@ -78,7 +78,7 @@ export LEANVOX_API_KEY="lv_live_your_key_here"
 
 Once connected, just ask your AI assistant in natural language:
 
-> "Read this paragraph aloud using the emma voice"
+> "Read this paragraph aloud using the podcast_conversational_female voice"
 
 > "Create a podcast dialogue between two speakers about AI"
 
