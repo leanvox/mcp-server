@@ -130,6 +130,69 @@
     }
   },
   {
+    "name": "leanvox_transcribe",
+    "description": "Transcribe an audio file with speaker diarization. Can return immediately with async STT job metadata when forceAsync is true and wait is false.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "filePath": {
+          "type": "string",
+          "description": "Path to the audio file to transcribe"
+        },
+        "language": {
+          "type": "string",
+          "description": "ISO 639-1 language code (auto-detect if omitted)"
+        },
+        "features": {
+          "type": "array",
+          "description": "Features to enable. Default: ['transcript', 'diarization']. Add 'summary' for summary with action items.",
+          "items": { "type": "string" }
+        },
+        "numSpeakers": {
+          "type": "number",
+          "description": "Hint for expected number of speakers"
+        },
+        "forceAsync": {
+          "type": "boolean",
+          "description": "Schedule as a background STT job even for short files"
+        },
+        "wait": {
+          "type": "boolean",
+          "description": "Poll scheduled jobs until complete. Set false to return job metadata immediately."
+        }
+      },
+      "required": ["filePath"]
+    }
+  },
+  {
+    "name": "leanvox_get_job",
+    "description": "Get status and available result metadata for an async Leanvox STT or TTS job.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "description": "Leanvox async job ID"
+        }
+      },
+      "required": ["jobId"]
+    }
+  },
+  {
+    "name": "leanvox_list_jobs",
+    "description": "List async Leanvox jobs, optionally filtered to STT or TTS.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["stt", "tts", "all"],
+          "description": "Optional job type filter"
+        }
+      }
+    }
+  },
+  {
     "name": "leanvox_check_balance",
     "description": "Check the current Leanvox account balance and total spending. Returns balance in cents and formatted dollar amounts.",
     "input_schema": {
