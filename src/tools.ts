@@ -2,6 +2,8 @@ import type { Leanvox } from "leanvox";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod/v4";
 import { formatError } from "./errors.js";
+import { readFileSync } from "node:fs";
+import { basename } from "node:path";
 
 export function registerTools(server: McpServer, client: Leanvox) {
   // --- leanvox_generate ---
@@ -269,16 +271,40 @@ export function registerTools(server: McpServer, client: Leanvox) {
           .number()
           .optional()
           .describe("Hint for expected number of speakers"),
+        forceAsync: z
+          .boolean()
+          .optional()
+          .describe("Schedule as a background STT job even for short files"),
+        wait: z
+          .boolean()
+          .optional()
+          .describe("Poll scheduled STT jobs until complete. Set false to return job metadata immediately."),
       },
     },
     async (args) => {
       try {
-        const result = await client.audio.transcribe({
-          file: args.filePath,
-          language: args.language,
-          features: args.features,
-          numSpeakers: args.numSpeakers,
-        });
+        const result = await transcribeAudio(args);
+        if ("status" in result && !("formatted_transcript" in result)) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: JSON.stringify(
+                  {
+                    id: result.id,
+                    jobType: result.jobType ?? "stt",
+                    status: result.status,
+                    pollUrl: result.pollUrl,
+                    message: result.message,
+                    error: result.error,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        }
         return {
           content: [
             {
@@ -296,6 +322,71 @@ export function registerTools(server: McpServer, client: Leanvox) {
                 null,
                 2,
               ),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify(formatError(error), null, 2) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // --- leanvox_get_job ---
+  server.registerTool(
+    "leanvox_get_job",
+    {
+      title: "Get Async Job",
+      description:
+        "Get status and available result metadata for an async Leanvox job. Supports both STT and TTS jobs.",
+      inputSchema: {
+        jobId: z.string().describe("Leanvox async job ID"),
+      },
+    },
+    async (args) => {
+      try {
+        const result = await (client as any).getJob(args.jobId);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify(formatError(error), null, 2) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // --- leanvox_list_jobs ---
+  server.registerTool(
+    "leanvox_list_jobs",
+    {
+      title: "List Async Jobs",
+      description:
+        "List async Leanvox jobs, optionally filtered to STT or TTS.",
+      inputSchema: {
+        type: z
+          .enum(["stt", "tts", "all"])
+          .optional()
+          .describe("Optional job type filter"),
+      },
+    },
+    async (args) => {
+      try {
+        const result = await (client as any).listJobs(args.type ? { type: args.type } : undefined);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify({ jobs: result }, null, 2),
             },
           ],
         };
@@ -514,4 +605,85 @@ export function registerTools(server: McpServer, client: Leanvox) {
       }
     },
   );
+}
+
+async function transcribeAudio(args: {
+  filePath: string;
+  language?: string;
+  features?: string[];
+  numSpeakers?: number;
+  forceAsync?: boolean;
+  wait?: boolean;
+}) {
+  const formData = new FormData();
+  const audio = readFileSync(args.filePath);
+  formData.append("file", new Blob([new Uint8Array(audio)]), basename(args.filePath));
+  if (args.language) formData.append("language", args.language);
+  if (args.features) formData.append("features", JSON.stringify(args.features));
+  if (args.numSpeakers !== undefined) formData.append("num_speakers", String(args.numSpeakers));
+  if (args.forceAsync) formData.append("force_async", "true");
+
+  const { status, data } = await leanvoxRequest("/v1/audio/transcribe", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (status === 202) {
+    const job = mapJob(data);
+    if (args.wait === false) return job;
+    return await waitForTranscription(job.id);
+  }
+
+  return data;
+}
+
+async function waitForTranscription(jobId: string) {
+  const started = Date.now();
+  while (Date.now() - started < 1_800_000) {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    const { data } = await leanvoxRequest(`/v1/jobs/${jobId}`);
+    const job = mapJob(data);
+    if (job.status === "completed") {
+      if (!job.result) throw new Error(`Transcription job ${jobId} completed without a result`);
+      return job.result;
+    }
+    if (job.status === "failed") {
+      throw new Error(`Transcription job ${jobId} failed: ${job.error ?? "Unknown error"}`);
+    }
+  }
+  throw new Error(`Transcription job ${jobId} timed out`);
+}
+
+function mapJob(raw: any) {
+  return {
+    id: raw.job_id ?? raw.id ?? "",
+    jobType: raw.job_type ?? raw.jobType ?? "stt",
+    status: raw.status ?? "pending",
+    pollUrl: raw.poll_url ?? raw.pollUrl,
+    message: raw.message,
+    result: raw.result,
+    error: raw.error_message ?? raw.error,
+  };
+}
+
+async function leanvoxRequest(path: string, init: RequestInit = {}) {
+  const apiKey = process.env["LEANVOX_API_KEY"];
+  if (!apiKey) {
+    throw new Error("Set LEANVOX_API_KEY to use Leanvox MCP tools");
+  }
+  const baseUrl = process.env["LEANVOX_API_BASE_URL"] ?? "https://api.leanvox.com";
+  const headers = new Headers(init.headers);
+  headers.set("Authorization", `Bearer ${apiKey}`);
+
+  const response = await fetch(new URL(path, baseUrl).toString(), {
+    ...init,
+    headers,
+  });
+  const data: any = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      data?.error?.message ?? data?.message ?? `Leanvox API request failed with ${response.status}`,
+    );
+  }
+  return { status: response.status, data };
 }

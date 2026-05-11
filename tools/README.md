@@ -66,6 +66,9 @@ const response = await anthropic.messages.create({
 | `leanvox_stream` | Stream audio to a local file |
 | `leanvox_dialogue` | Multi-speaker dialogue generation |
 | `leanvox_list_voices` | List available TTS voices |
+| `leanvox_transcribe` | Transcribe audio or schedule async STT jobs |
+| `leanvox_get_job` | Get async TTS/STT job status |
+| `leanvox_list_jobs` | List async TTS/STT jobs |
 | `leanvox_check_balance` | Check account balance |
 
 ## Handling Tool Calls
@@ -85,6 +88,12 @@ async function handleToolCall(name: string, args: Record<string, unknown>) {
       return await leanvox.dialogue(args);
     case "leanvox_list_voices":
       return await leanvox.voices.list(args.model);
+    case "leanvox_transcribe":
+      return await leanvox.audio.transcribe(args);
+    case "leanvox_get_job":
+      return await leanvox.getJob(args.jobId);
+    case "leanvox_list_jobs":
+      return await leanvox.listJobs(args);
     case "leanvox_check_balance":
       return await leanvox.account.balance();
     default:

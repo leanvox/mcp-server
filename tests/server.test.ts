@@ -5,6 +5,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { registerTools } from "../src/tools.js";
 import { registerResources } from "../src/resources.js";
 import { registerPrompts } from "../src/prompts.js";
+import { rmSync, writeFileSync } from "node:fs";
 
 // --- Mock node:fs/promises ---
 vi.mock("node:fs/promises", () => ({
@@ -39,6 +40,11 @@ vi.mock("leanvox", () => {
     account: {
       balance: vi.fn(),
     },
+    audio: {
+      transcribe: vi.fn(),
+    },
+    getJob: vi.fn(),
+    listJobs: vi.fn(),
   };
 
   return {
@@ -251,6 +257,87 @@ describe("leanvox_list_voices", () => {
     });
 
     expect(mockClient.voices.list).toHaveBeenCalledWith("standard");
+  });
+});
+
+describe("leanvox_transcribe", () => {
+  it("returns scheduled STT job metadata when wait is false", async () => {
+    const { client } = await createTestEnv();
+    process.env["LEANVOX_API_KEY"] = "lv_test_abc123";
+    const originalFetch = globalThis.fetch;
+    const audioPath = "/tmp/leanvox-mcp-test-meeting.mp3";
+    writeFileSync(audioPath, Buffer.from("fake audio"));
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 202,
+      json: async () => ({
+        job_id: "job_stt_123",
+        job_type: "stt",
+        status: "pending",
+        poll_url: "/v1/jobs/job_stt_123",
+        message: "Track progress with poll_url.",
+      }),
+    });
+
+    try {
+      const result = await client.callTool({
+        name: "leanvox_transcribe",
+        arguments: {
+          filePath: audioPath,
+          forceAsync: true,
+          wait: false,
+        },
+      });
+
+      expect(result.isError).toBeFalsy();
+      const content = result.content as Array<{ type: string; text: string }>;
+      const parsed = JSON.parse(content[0].text);
+      expect(parsed.id).toBe("job_stt_123");
+      expect(parsed.jobType).toBe("stt");
+      const request = (globalThis.fetch as any).mock.calls[0][1];
+      expect(request.body.get("force_async")).toBe("true");
+    } finally {
+      globalThis.fetch = originalFetch;
+      delete process.env["LEANVOX_API_KEY"];
+      rmSync(audioPath, { force: true });
+    }
+  });
+});
+
+describe("leanvox_jobs", () => {
+  it("gets an async job by ID", async () => {
+    const { client, mockClient } = await createTestEnv();
+    mockClient.getJob.mockResolvedValueOnce({
+      id: "job_stt_123",
+      jobType: "stt",
+      status: "completed",
+    });
+
+    const result = await client.callTool({
+      name: "leanvox_get_job",
+      arguments: { jobId: "job_stt_123" },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(mockClient.getJob).toHaveBeenCalledWith("job_stt_123");
+  });
+
+  it("lists async jobs with a type filter", async () => {
+    const { client, mockClient } = await createTestEnv();
+    mockClient.listJobs.mockResolvedValueOnce([
+      { id: "job_stt_123", jobType: "stt", status: "processing" },
+    ]);
+
+    const result = await client.callTool({
+      name: "leanvox_list_jobs",
+      arguments: { type: "stt" },
+    });
+
+    expect(result.isError).toBeFalsy();
+    const content = result.content as Array<{ type: string; text: string }>;
+    const parsed = JSON.parse(content[0].text);
+    expect(parsed.jobs).toHaveLength(1);
+    expect(mockClient.listJobs).toHaveBeenCalledWith({ type: "stt" });
   });
 });
 
@@ -478,7 +565,7 @@ describe("error handling", () => {
 // ===== TOOLS LISTING =====
 
 describe("tool listing", () => {
-  it("exposes all 5 tools", async () => {
+  it("exposes all registered tools", async () => {
     const { client } = await createTestEnv();
     const tools = await client.listTools();
 
@@ -488,8 +575,10 @@ describe("tool listing", () => {
     expect(names).toContain("leanvox_dialogue");
     expect(names).toContain("leanvox_list_voices");
     expect(names).toContain("leanvox_transcribe");
+    expect(names).toContain("leanvox_get_job");
+    expect(names).toContain("leanvox_list_jobs");
     expect(names).toContain("leanvox_check_balance");
-    expect(names).toHaveLength(9);
+    expect(names).toHaveLength(11);
   });
 
   it("each tool has a description and input schema", async () => {

@@ -100,6 +100,9 @@ The AI assistant handles everything — no code needed.
 | `leanvox_stream` | Stream audio to a file |
 | `leanvox_dialogue` | Create multi-speaker dialogue |
 | `leanvox_list_voices` | Browse available voices |
+| `leanvox_transcribe` | Transcribe audio or schedule async STT jobs |
+| `leanvox_get_job` | Get async TTS/STT job status |
+| `leanvox_list_jobs` | List async TTS/STT jobs |
 | `leanvox_clone_voice` | Clone a voice from audio |
 | `leanvox_design_voice` | Design a voice from a description |
 | `leanvox_check_balance` | Check account balance |
